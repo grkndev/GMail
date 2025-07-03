@@ -35,7 +35,7 @@ import { useState } from "react"
 import { Input } from "../ui/input"
 import DataTablePagination from "./pagination"
 import { cn } from "@/lib/utils"
-import { TrashIcon } from "lucide-react"
+import { Archive, MailOpen, MailWarning, RefreshCcw, TrashIcon } from "lucide-react"
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
@@ -80,6 +80,10 @@ export function DataTable<TData, TValue>({
                     }
                     className="max-w-sm"
                 />
+                <Button variant={"outline"}>
+                    <RefreshCcw className="w-4 h-4" />
+                    <span>Refresh</span>
+                </Button>
                 {
                     Object.keys(rowSelection).length > 0 && (
                         <div className="flex items-center gap-2">
@@ -104,6 +108,18 @@ export function DataTable<TData, TValue>({
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>
+                            <Button variant={"outline"}>
+                                <MailOpen className="w-4 h-4" />
+                                <span>Mark as read</span>
+                            </Button>
+                            <Button variant={"outline"} className="border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white">
+                                <Archive className="w-4 h-4" />
+                                <span>Archive</span>
+                            </Button>
+                            <Button variant={"outline"} className="border-orange-500 text-orange-500 hover:bg-orange-500 hover:text-white">
+                                <MailWarning className="w-4 h-4" />
+                                <span>Mark as Spam</span>
+                            </Button>
 
                         </div>
                     )
@@ -111,7 +127,7 @@ export function DataTable<TData, TValue>({
             </div>
             <div className="rounded-md border">
                 <Table>
-                    <TableHeader>
+                    <TableHeader className="bg-gray-50">
                         {table.getHeaderGroups().map((headerGroup) => (
                             <TableRow key={headerGroup.id}>
                                 {headerGroup.headers.map((header) => {
