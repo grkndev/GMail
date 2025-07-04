@@ -1,3 +1,4 @@
+"use client"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
@@ -13,8 +14,11 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { usePathname } from "next/navigation"
+import React from "react"
 
 export default function Page({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -34,16 +38,24 @@ export default function Page({ children }: { children: React.ReactNode }) {
                     GMail
                   </BreadcrumbLink>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage >Incoming</BreadcrumbPage>
-                </BreadcrumbItem>
+
+                {
+                  pathname.split('/').filter((item, index) => item !== '' || index !== pathname.split('/').length - 1).map((item, index) => (
+                    <React.Fragment key={index}>
+                      <BreadcrumbItem>
+                        <BreadcrumbPage >{item.charAt(0).toUpperCase() + item.slice(1)}</BreadcrumbPage>
+                      </BreadcrumbItem>
+                      <BreadcrumbSeparator className="hidden md:block" />
+                    </React.Fragment>
+                  ))
+                }
+
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
         <div className="flex flex-1 gap-4 p-4 pt-0">
-            {children}
+          {children}
         </div>
       </SidebarInset>
     </SidebarProvider>
