@@ -136,7 +136,7 @@ export async function POST(request: Request) {
 
         // Send email via Gmail API
         const response = await fetch(
-            `${CONSTANTS.BASE_URL}/gmail/v1/users/me/messages/send`,
+            `${CONSTANTS.BASE_URL}/gmail/v1/users/${(session as any).user.google_id}/messages/send`,
             {
                 method: 'POST',
                 headers: {

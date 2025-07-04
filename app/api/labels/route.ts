@@ -11,11 +11,8 @@ export async function GET(request: Request) {
     if (!session) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    // return NextResponse.json({ session });
-
-    //TESTING GOOGLE API
-    const accessToken = session.accessToken
-    const response = await fetch(`${CONSTANTS.BASE_URL}/gmail/v1/users/${session.user.google_id}/labels`, {
+    const accessToken = (session as any).accessToken
+    const response = await fetch(`${CONSTANTS.BASE_URL}/gmail/v1/users/${(session as any).user.google_id}/labels`, {
         headers: {
             Authorization: `Bearer ${accessToken}`
         }

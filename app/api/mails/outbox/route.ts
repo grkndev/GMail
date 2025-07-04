@@ -167,14 +167,14 @@ export async function GET(request: Request) {
             nextPageToken: listData.nextPageToken,
             resultSizeEstimate: listData.resultSizeEstimate || 0,
             category: category,
-            type: 'inbox',
+            type: 'outbox',
             hasMore: !!listData.nextPageToken
         });
 
     } catch (error) {
-        console.error('Inbox API Error:', error)
+        console.error('Outbox API Error:', error)
         return NextResponse.json(
-            { error: "Inbox API hatası", details: (error as Error).message },
+            { error: "Outbox API hatası", details: (error as Error).message },
             { status: 500 }
         );
     }
