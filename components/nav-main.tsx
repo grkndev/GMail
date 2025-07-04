@@ -50,6 +50,7 @@ export function NavMain({
                 tooltip={item.title}
                 onClick={() => handleNavigation(item.url)}
                 className="cursor-pointer"
+                data-active={item.isActive}
               >
                 <item.icon />
                 <span>{item.title}</span>
