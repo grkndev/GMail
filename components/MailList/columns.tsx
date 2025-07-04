@@ -55,7 +55,7 @@ export const columns: ColumnDef<GmailMessage>[] = [
         },
         cell: ({ row }) => {
             return <HoverCard>
-                <HoverCardTrigger> <div className="w-fit ">{row.original.from_name}</div></HoverCardTrigger>
+                <HoverCardTrigger> <div className="w-fit ">{row.original.from_name || row.original.from_email.split('@')[0]}</div></HoverCardTrigger>
                 <HoverCardContent className="p-2">
                     <p>{row.original.from_email}</p>
                 </HoverCardContent>
