@@ -600,9 +600,9 @@ export default function MailDetailPage({ params }: { params: Promise<{ mailid: s
                                                             <DialogContent>
                                                                 <DialogHeader>
                                                                     <DialogTitle>{attachment.filename}</DialogTitle>
-                                                                   
+
                                                                 </DialogHeader>
-                                                                <Image src={imagePreview?.src || ''} alt={imagePreview?.name || ''} width={500} height={500} />
+                                                                <Image src={imagePreview?.src || '/placeholder.svg'} alt={imagePreview?.name || 'Loading...'} width={500} height={500} />
                                                             </DialogContent>
                                                         </Dialog>
                                                     )}
