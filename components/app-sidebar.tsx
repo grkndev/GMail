@@ -12,6 +12,7 @@ import {
   Mail,
   Map,
   PieChart,
+  Plus,
   Send,
   Settings2,
   SquareTerminal,
@@ -33,6 +34,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import Image from "next/image"
+import Link from "next/link"
+import { Button } from "./ui/button"
 
 const data = {
   user: {
@@ -111,7 +114,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const getActiveNavData = () => {
     const hashToNavMap: Record<string, string> = {
       'inbox': 'Incoming',
-      'starred': 'Starred', 
+      'starred': 'Starred',
       'outbox': 'Outbox',
       'spam': 'Spam',
       'trash': 'Trash',
@@ -137,7 +140,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="#">
+              <a href="/">
                 <div className=" text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                   <Image src={"/gdev_logo_black.png"} alt="GrknDev" width={32} height={32} />
                 </div>
@@ -151,6 +154,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
+
+        <Link href="/dashboard/mail/new">
+          <Button variant="outline" className="w-full">
+            <Plus className="w-4 h-4" />
+            Yeni Mail
+          </Button>
+        </Link>
+
         <NavMain items={activeData.navMain} />
         <NavSecondary items={activeData.navSecondary} className="mt-auto" />
       </SidebarContent>
