@@ -36,7 +36,7 @@ export default function Page() {
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Incoming</BreadcrumbPage>
+                  <BreadcrumbPage >Incoming</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
