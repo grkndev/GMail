@@ -43,7 +43,7 @@ export default function MailListPage() {
     const [data, setData] = useState<GmailMessage[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
-    const [currentHash, setCurrentHash] = useState('')
+    const [currentHash, setCurrentHash] = useState('#inbox')
 
     // Get current hash from URL
     const getCurrentHash = () => {
