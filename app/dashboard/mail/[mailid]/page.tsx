@@ -3,14 +3,14 @@
 import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
-import { 
-    ArrowLeft, 
-    Reply, 
-    ReplyAll, 
-    Forward, 
-    Trash2, 
-    Archive, 
-    Star, 
+import {
+    ArrowLeft,
+    Reply,
+    ReplyAll,
+    Forward,
+    Trash2,
+    Archive,
+    Star,
     MoreHorizontal,
     Paperclip,
     AlertTriangle,
@@ -20,14 +20,14 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
-import { 
-    DropdownMenu, 
-    DropdownMenuContent, 
-    DropdownMenuItem, 
-    DropdownMenuTrigger 
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu"
 import { useNavigation } from "@/components/Providers/navigation-provider"
-import { 
+import {
     Breadcrumb,
     BreadcrumbItem,
     BreadcrumbLink,
@@ -70,7 +70,7 @@ interface EmailMessage {
 }
 
 export default function MailDetailPage({ params }: { params: Promise<{ mailid: string }> }) {
-    const { mailid } = use(params) 
+    const { mailid } = use(params)
     const [message, setMessage] = useState<EmailMessage | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -85,7 +85,7 @@ export default function MailDetailPage({ params }: { params: Promise<{ mailid: s
     const fetchMessage = async () => {
         setLoading(true)
         setError(null)
-        
+
         try {
             const response = await fetch(`/api/mails/${mailid}`, {
                 method: "GET",
@@ -108,7 +108,7 @@ export default function MailDetailPage({ params }: { params: Promise<{ mailid: s
 
     const handleAction = async (action: string, messageId: string) => {
         setActionLoading(action)
-        
+
         try {
             let endpoint = ''
             let method = 'POST'
@@ -168,7 +168,7 @@ export default function MailDetailPage({ params }: { params: Promise<{ mailid: s
     const renderEmailBody = (body: { text: string; html: string }) => {
         if (body.html) {
             return (
-                <div 
+                <div
                     className="prose prose-sm max-w-none"
                     dangerouslySetInnerHTML={{ __html: body.html }}
                 />
@@ -233,93 +233,79 @@ export default function MailDetailPage({ params }: { params: Promise<{ mailid: s
             {/* Header with Breadcrumb */}
             <div className="border-b bg-white p-4">
                 <div className="flex items-center gap-2 mb-3">
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => navigateBack()}
                         className="gap-2"
                     >
                         <ArrowLeft className="w-4 h-4" />
                         Geri
                     </Button>
-                    <Separator orientation="vertical" className="h-4" />
-                    <Breadcrumb>
-                        <BreadcrumbList>
-                            <BreadcrumbItem>
-                                <BreadcrumbLink href="/dashboard">GMail</BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator />
-                            <BreadcrumbItem>
-                                <BreadcrumbLink href="/dashboard/mail">Emails</BreadcrumbLink>
-                            </BreadcrumbItem>
-                            <BreadcrumbSeparator />
-                            <BreadcrumbItem>
-                                <BreadcrumbPage>
-                                    {message.subject.length > 30 
-                                        ? `${message.subject.slice(0, 30)}...` 
-                                        : message.subject
-                                    }
-                                </BreadcrumbPage>
-                            </BreadcrumbItem>
-                        </BreadcrumbList>
-                    </Breadcrumb>
+                    <Separator orientation="vertical" className=" h-4 " />
+                    <h1 className="text-lg font-semibold">
+                        {message.subject.length > 30
+                            ? `${message.subject.slice(0, 30)}...`
+                            : message.subject
+                        }
+                    </h1>
                 </div>
 
                 {/* Action Toolbar */}
                 <div className="flex items-center gap-2">
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
+                    <Button
+                        variant="outline"
+                        size="sm"
                         className="gap-2"
                         onClick={() => toast.info('Yanıtlama özelliği yakında eklenecek')}
                     >
                         <Reply className="w-4 h-4" />
                         Yanıtla
                     </Button>
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
+                    <Button
+                        variant="outline"
+                        size="sm"
                         className="gap-2"
                         onClick={() => toast.info('Tümünü yanıtlama özelliği yakında eklenecek')}
                     >
                         <ReplyAll className="w-4 h-4" />
                         Tümünü Yanıtla
                     </Button>
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
+                    <Button
+                        variant="outline"
+                        size="sm"
                         className="gap-2"
                         onClick={() => toast.info('Yönlendirme özelliği yakında eklenecek')}
                     >
                         <Forward className="w-4 h-4" />
                         Yönlendir
                     </Button>
-                    
+
                     <Separator orientation="vertical" className="h-4 mx-2" />
-                    
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
+
+                    <Button
+                        variant="outline"
+                        size="sm"
                         className="gap-2"
                         onClick={() => handleAction('star', message.id)}
                         disabled={actionLoading === 'star'}
                     >
                         <Star className={`w-4 h-4 ${message.isStarred ? 'fill-yellow-400 text-yellow-400' : ''}`} />
                     </Button>
-                    
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
+
+                    <Button
+                        variant="outline"
+                        size="sm"
                         className="gap-2"
                         onClick={() => handleAction('archive', message.id)}
                         disabled={actionLoading === 'archive'}
                     >
                         <Archive className="w-4 h-4" />
                     </Button>
-                    
-                    <Button 
-                        variant="outline" 
-                        size="sm" 
+
+                    <Button
+                        variant="outline"
+                        size="sm"
                         className="gap-2 text-red-600 hover:text-red-700"
                         onClick={() => handleAction('trash', message.id)}
                         disabled={actionLoading === 'trash'}
@@ -338,7 +324,7 @@ export default function MailDetailPage({ params }: { params: Promise<{ mailid: s
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                                 onClick={() => handleAction('spam', message.id)}
                                 disabled={actionLoading === 'spam'}
                                 className="text-red-600"
@@ -412,7 +398,7 @@ export default function MailDetailPage({ params }: { params: Promise<{ mailid: s
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {message.attachments.map((attachment, index) => (
-                                        <div 
+                                        <div
                                             key={index}
                                             className="flex items-center gap-2 bg-gray-50 rounded px-3 py-2 text-sm"
                                         >

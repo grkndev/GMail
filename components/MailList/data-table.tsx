@@ -198,12 +198,7 @@ export function DataTable<TData, TValue>({
                         {table.getRowModel().rows?.length ? (
                             table.getRowModel().rows.map((row) => (
                                 <TableRow
-                                    onClick={() => {
-                                        const message = row.original as GmailMessage
-                                        // Store current page before navigating
-                                        storePreviousPage()
-                                        router.push(`/dashboard/mail/${message.id}`)
-                                    }}
+
                                     key={row.id}
                                     data-state={row.getIsSelected() && "selected"}
                                     className={
@@ -213,8 +208,15 @@ export function DataTable<TData, TValue>({
                                         )
                                     }
                                 >
-                                    {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id}>
+
+                                    {row.getVisibleCells().map((cell, index) => (
+                                        <TableCell key={cell.id} onClick={() => {
+                                            if (index === 0) return;
+                                            const message = row.original as GmailMessage
+                                            // Store current page before navigating
+                                            storePreviousPage()
+                                            router.push(`/dashboard/mail/${message.id}`)
+                                        }}>
                                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                         </TableCell>
                                     ))}
