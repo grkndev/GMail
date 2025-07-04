@@ -104,6 +104,21 @@ export default function NewMailPage() {
         }
     }
 
+    // Convert file to base64
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.readAsDataURL(file)
+            reader.onload = () => {
+                const result = reader.result as string
+                // Remove data:mime/type;base64, prefix
+                const base64 = result.split(',')[1]
+                resolve(base64)
+            }
+            reader.onerror = error => reject(error)
+        })
+    }
+
     // Handle file upload
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || [])
@@ -195,6 +210,24 @@ export default function NewMailPage() {
 
         setIsLoading(true)
         try {
+            // Show processing message for attachments
+            if (formData.attachments.length > 0) {
+                toast.info(`${formData.attachments.length} ek işleniyor...`)
+            }
+
+            // Convert attachments to base64
+            const attachmentsWithData = await Promise.all(
+                formData.attachments.map(async (file) => {
+                    const base64Data = await fileToBase64(file)
+                    return {
+                        name: file.name,
+                        size: file.size,
+                        type: file.type,
+                        data: base64Data
+                    }
+                })
+            )
+
             const response = await fetch('/api/mails/send', {
                 method: 'POST',
                 headers: {
@@ -206,16 +239,16 @@ export default function NewMailPage() {
                     bcc: formData.bcc,
                     subject: formData.subject,
                     body: formData.body,
-                    attachments: formData.attachments.map(f => ({
-                        name: f.name,
-                        size: f.size,
-                        type: f.type
-                    }))
+                    attachments: attachmentsWithData
                 })
             })
 
             if (response.ok) {
-                toast.success("Email başarıyla gönderildi!")
+                const successMessage = formData.attachments.length > 0 
+                    ? `Email ${formData.attachments.length} ek ile birlikte başarıyla gönderildi!`
+                    : "Email başarıyla gönderildi!"
+                toast.success(successMessage)
+                
                 // Clear draft from localStorage
                 const draftKeys = Object.keys(localStorage).filter(key => key.startsWith('email_draft_'))
                 draftKeys.forEach(key => localStorage.removeItem(key))
@@ -576,6 +609,12 @@ export default function NewMailPage() {
                             
                             {formData.attachments.length > 0 && (
                                 <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
+                                        <span>{formData.attachments.length} dosya</span>
+                                        <span>
+                                            Toplam: {formatFileSize(formData.attachments.reduce((total, file) => total + file.size, 0))}
+                                        </span>
+                                    </div>
                                     {formData.attachments.map((file, index) => (
                                         <div key={index} className="flex items-center justify-between bg-gray-50 rounded p-2">
                                             <div className="flex items-center gap-2">

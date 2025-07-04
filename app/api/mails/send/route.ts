@@ -28,8 +28,34 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Email body is required" }, { status: 400 });
         }
 
-        // Build email message in RFC 2822 format
+        // Validate attachments if present
+        if (attachments && Array.isArray(attachments)) {
+            for (const attachment of attachments) {
+                if (!attachment.name || !attachment.type || !attachment.data) {
+                    return NextResponse.json({ 
+                        error: "Invalid attachment data. Name, type, and data are required." 
+                    }, { status: 400 });
+                }
+                
+                // Check attachment size (base64 encoded size should be reasonable)
+                if (attachment.data.length > 35 * 1024 * 1024) { // ~26MB original file size
+                    return NextResponse.json({ 
+                        error: `Attachment ${attachment.name} is too large. Maximum size is 25MB.` 
+                    }, { status: 400 });
+                }
+            }
+        }
+
+        // Generate a unique boundary for MIME multipart
+        const generateBoundary = () => {
+            return `boundary_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+        }
+
+        // Build email message in RFC 2822 format with MIME multipart support
         const buildEmailMessage = () => {
+            const hasAttachments = attachments && attachments.length > 0
+            const boundary = hasAttachments ? generateBoundary() : null
+            
             let message = ""
             
             // Recipients
@@ -46,10 +72,24 @@ export async function POST(request: Request) {
             // Subject
             message += `Subject: ${subject}\r\n`
             
-            // Headers
-            message += `Content-Type: text/html; charset=utf-8\r\n`
+            // MIME Headers
             message += `MIME-Version: 1.0\r\n`
+            
+            if (hasAttachments) {
+                message += `Content-Type: multipart/mixed; boundary="${boundary}"\r\n`
+            } else {
+                message += `Content-Type: text/html; charset=utf-8\r\n`
+            }
+            
             message += `\r\n`
+            
+            if (hasAttachments) {
+                // Add body as first part
+                message += `--${boundary}\r\n`
+                message += `Content-Type: text/html; charset=utf-8\r\n`
+                message += `Content-Transfer-Encoding: 7bit\r\n`
+                message += `\r\n`
+            }
             
             // Body - Convert markdown-like formatting to basic HTML
             let htmlBody = emailBody
@@ -59,6 +99,28 @@ export async function POST(request: Request) {
                 .replace(/\n/g, '<br>') // Line breaks
             
             message += htmlBody
+            
+            if (hasAttachments) {
+                message += `\r\n`
+                
+                // Add each attachment
+                attachments.forEach((attachment: any) => {
+                    message += `--${boundary}\r\n`
+                    message += `Content-Type: ${attachment.type}; name="${attachment.name}"\r\n`
+                    message += `Content-Transfer-Encoding: base64\r\n`
+                    message += `Content-Disposition: attachment; filename="${attachment.name}"\r\n`
+                    message += `\r\n`
+                    
+                    // Add base64 data with line breaks every 76 characters (RFC requirement)
+                    const base64Data = attachment.data
+                    const chunks = base64Data.match(/.{1,76}/g) || []
+                    message += chunks.join('\r\n')
+                    message += `\r\n`
+                })
+                
+                // Close boundary
+                message += `--${boundary}--\r\n`
+            }
             
             return message
         }
