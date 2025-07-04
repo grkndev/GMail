@@ -39,6 +39,7 @@ import { Archive, MailOpen, MailWarning, RefreshCcw, TrashIcon } from "lucide-re
 import { GmailMessage } from "./email.type"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
+import { useNavigation } from "../Providers/navigation-provider"
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
@@ -57,6 +58,7 @@ export function DataTable<TData, TValue>({
     )
     const [rowSelection, setRowSelection] = useState({})
     const router = useRouter()
+    const { storePreviousPage } = useNavigation()
     const table = useReactTable({
         data,
         columns,
@@ -198,6 +200,8 @@ export function DataTable<TData, TValue>({
                                 <TableRow
                                     onClick={() => {
                                         const message = row.original as GmailMessage
+                                        // Store current page before navigating
+                                        storePreviousPage()
                                         router.push(`/dashboard/mail/${message.id}`)
                                     }}
                                     key={row.id}

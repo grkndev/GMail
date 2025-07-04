@@ -26,6 +26,7 @@ import {
     DropdownMenuItem, 
     DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu"
+import { useNavigation } from "@/components/Providers/navigation-provider"
 import { 
     Breadcrumb,
     BreadcrumbItem,
@@ -75,6 +76,7 @@ export default function MailDetailPage({ params }: { params: Promise<{ mailid: s
     const [error, setError] = useState<string | null>(null)
     const [actionLoading, setActionLoading] = useState<string | null>(null)
     const router = useRouter()
+    const { navigateBack } = useNavigation()
 
     useEffect(() => {
         fetchMessage()
@@ -144,7 +146,7 @@ export default function MailDetailPage({ params }: { params: Promise<{ mailid: s
 
             if (response.ok) {
                 toast.success(action === 'trash' ? 'Email çöp kutusuna taşındı' : 'Email spam olarak işaretlendi')
-                router.push('/dashboard/mail#inbox')
+                navigateBack()
             } else {
                 throw new Error('İşlem başarısız')
             }
@@ -203,7 +205,7 @@ export default function MailDetailPage({ params }: { params: Promise<{ mailid: s
                         <Button onClick={fetchMessage} size="sm">
                             Tekrar Dene
                         </Button>
-                        <Button onClick={() => router.push('/dashboard/mail#inbox')} variant="outline" size="sm">
+                        <Button onClick={() => navigateBack()} variant="outline" size="sm">
                             Geri Dön
                         </Button>
                     </div>
@@ -218,7 +220,7 @@ export default function MailDetailPage({ params }: { params: Promise<{ mailid: s
                 <div className="text-center">
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">Email Bulunamadı</h3>
                     <p className="text-sm text-gray-600 mb-4">Bu email mevcut değil veya silinmiş olabilir.</p>
-                    <Button onClick={() => router.push('/dashboard/mail#inbox')} variant="outline" size="sm">
+                    <Button onClick={() => navigateBack()} variant="outline" size="sm">
                         Geri Dön
                     </Button>
                 </div>
@@ -234,7 +236,7 @@ export default function MailDetailPage({ params }: { params: Promise<{ mailid: s
                     <Button 
                         variant="ghost" 
                         size="sm" 
-                        onClick={() => router.push('/dashboard/mail#inbox')}
+                        onClick={() => navigateBack()}
                         className="gap-2"
                     >
                         <ArrowLeft className="w-4 h-4" />
