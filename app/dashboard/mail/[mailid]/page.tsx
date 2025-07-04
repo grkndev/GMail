@@ -14,7 +14,17 @@ import {
     MoreHorizontal,
     Paperclip,
     AlertTriangle,
-    LoaderCircle
+    LoaderCircle,
+    Download,
+    Eye,
+    File,
+    FileText,
+    FileImage,
+    FileVideo,
+    FileAudio,
+    FileSpreadsheet,
+    X,
+    ZoomIn
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -36,6 +46,8 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { toast } from "sonner"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import Image from "next/image"
 
 interface EmailMessage {
     id: string
@@ -75,12 +87,26 @@ export default function MailDetailPage({ params }: { params: Promise<{ mailid: s
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [actionLoading, setActionLoading] = useState<string | null>(null)
+    const [imagePreview, setImagePreview] = useState<{ src: string; name: string } | null>(null)
+    const [downloadingAttachment, setDownloadingAttachment] = useState<string | null>(null)
     const router = useRouter()
     const { navigateBack } = useNavigation()
 
     useEffect(() => {
         fetchMessage()
     }, [mailid])
+
+    // Handle ESC key for modal
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && imagePreview) {
+                setImagePreview(null)
+            }
+        }
+
+        document.addEventListener('keydown', handleKeyDown)
+        return () => document.removeEventListener('keydown', handleKeyDown)
+    }, [imagePreview])
 
     const fetchMessage = async () => {
         setLoading(true)
@@ -165,6 +191,133 @@ export default function MailDetailPage({ params }: { params: Promise<{ mailid: s
         return email.split('@')[0].slice(0, 2).toUpperCase()
     }
 
+    // Get file type icon based on MIME type
+    const getFileIcon = (mimeType: string) => {
+        if (mimeType.startsWith('image/')) return FileImage
+        if (mimeType.startsWith('video/')) return FileVideo
+        if (mimeType.startsWith('audio/')) return FileAudio
+        if (mimeType.includes('pdf')) return FileText
+        if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return FileSpreadsheet
+        if (mimeType.includes('document') || mimeType.includes('word')) return FileText
+        return File
+    }
+
+    // Check if file is an image
+    const isImageFile = (mimeType: string) => {
+        return mimeType.startsWith('image/')
+    }
+
+    // Format file size
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return '0 Bytes'
+        const k = 1024
+        const sizes = ['Bytes', 'KB', 'MB', 'GB']
+        const i = Math.floor(Math.log(bytes) / Math.log(k))
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+    }
+
+    // Download attachment
+    const downloadAttachment = async (attachment: any) => {
+        setDownloadingAttachment(attachment.attachmentId)
+        try {
+            const response = await fetch(`/api/mails/${mailid}/attachments/${attachment.attachmentId}`)
+
+            if (!response.ok) {
+                throw new Error('Dosya indirilemedi')
+            }
+
+            const data = await response.json()
+
+            // Convert base64url to base64 format
+            let base64Data = data.data
+
+            // Remove any whitespace, newlines
+            base64Data = base64Data.replace(/\s/g, '')
+
+            // Convert base64url to base64
+            // Replace URL-safe characters with standard base64 characters
+            base64Data = base64Data.replace(/-/g, '+').replace(/_/g, '/')
+
+            // Add padding if needed (base64url doesn't use padding)
+            while (base64Data.length % 4) {
+                base64Data += '='
+            }
+
+            // Try to decode base64
+            let byteCharacters
+            try {
+                byteCharacters = atob(base64Data)
+            } catch (decodeError) {
+                console.error('Base64 decode error:', decodeError)
+                throw new Error('Dosya formatı desteklenmiyor')
+            }
+
+            // Convert to byte array
+            const byteNumbers = new Array(byteCharacters.length)
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i)
+            }
+            const byteArray = new Uint8Array(byteNumbers)
+
+            // Create blob and download
+            const blob = new Blob([byteArray], { type: attachment.mimeType })
+
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = attachment.filename
+            a.style.display = 'none'
+            document.body.appendChild(a)
+            a.click()
+
+            // Cleanup
+            window.URL.revokeObjectURL(url)
+            document.body.removeChild(a)
+
+            toast.success('Dosya indirildi')
+        } catch (error) {
+            console.error('Download error:', error)
+            toast.error(error instanceof Error ? error.message : 'Dosya indirilemedi')
+        } finally {
+            setDownloadingAttachment(null)
+        }
+    }
+
+    // Fixed previewImage function with proper base64 handling
+    const previewImage = async (attachment: any) => {
+        try {
+            const response = await fetch(`/api/mails/${mailid}/attachments/${attachment.attachmentId}`)
+
+            if (!response.ok) {
+                throw new Error('Resim yüklenemedi')
+            }
+
+            const data = await response.json()
+
+            // Convert base64url to base64 format
+            let base64Data = data.data
+            base64Data = base64Data.replace(/\s/g, '')
+
+            // Convert base64url to base64
+            base64Data = base64Data.replace(/-/g, '+').replace(/_/g, '/')
+
+            // Add padding if needed
+            while (base64Data.length % 4) {
+                base64Data += '='
+            }
+
+            const imageSrc = `data:${attachment.mimeType};base64,${base64Data}`
+
+            setImagePreview({
+                src: imageSrc,
+                name: attachment.filename
+            })
+        } catch (error) {
+            console.error('Preview error:', error)
+            toast.error(error instanceof Error ? error.message : 'Resim önizlemesi açılamadı')
+        }
+    }
+
     const renderEmailBody = (body: { text: string; html: string }) => {
         if (body.html) {
             return (
@@ -210,6 +363,9 @@ export default function MailDetailPage({ params }: { params: Promise<{ mailid: s
                         </Button>
                     </div>
                 </div>
+
+                {/* Image Preview Modal */}
+
             </div>
         )
     }
@@ -390,25 +546,84 @@ export default function MailDetailPage({ params }: { params: Promise<{ mailid: s
                         {/* Attachments */}
                         {message.attachments && message.attachments.length > 0 && (
                             <div className="mb-4">
-                                <div className="flex items-center gap-2 mb-2">
+                                <div className="flex items-center gap-2 mb-3">
                                     <Paperclip className="w-4 h-4 text-gray-500" />
                                     <span className="text-sm font-medium">
-                                        {message.attachments.length} Ek
+                                        {message.attachments.length} Ek ({formatFileSize(message.attachments.reduce((total, att) => total + att.size, 0))})
                                     </span>
                                 </div>
-                                <div className="flex flex-wrap gap-2">
-                                    {message.attachments.map((attachment, index) => (
-                                        <div
-                                            key={index}
-                                            className="flex items-center gap-2 bg-gray-50 rounded px-3 py-2 text-sm"
-                                        >
-                                            <Paperclip className="w-3 h-3" />
-                                            <span>{attachment.filename}</span>
-                                            <span className="text-xs text-gray-500">
-                                                ({Math.round(attachment.size / 1024)}KB)
-                                            </span>
-                                        </div>
-                                    ))}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {message.attachments.map((attachment, index) => {
+                                        const FileIconComponent = getFileIcon(attachment.mimeType)
+                                        const isImage = isImageFile(attachment.mimeType)
+
+                                        return (
+                                            <div
+                                                key={index}
+                                                className="flex items-center gap-3 bg-gray-50 hover:bg-gray-100 rounded-lg p-3 border transition-colors"
+                                            >
+                                                <div className="flex-shrink-0">
+                                                    {isImage ? (
+                                                        <div className="w-10 h-10 bg-blue-100 rounded flex items-center justify-center">
+                                                            <FileImage className="w-5 h-5 text-blue-600" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
+                                                            <FileIconComponent className="w-5 h-5 text-gray-600" />
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-gray-900 truncate">
+                                                        {attachment.filename}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {formatFileSize(attachment.size)}
+                                                    </p>
+                                                </div>
+
+                                                <div className="flex items-center gap-1">
+                                                    {isImage && (
+                                                        <Dialog>
+                                                            <DialogTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => previewImage(attachment)}
+                                                                    className="h-8 w-8 p-0"
+                                                                    title="Önizleme"
+                                                                >
+                                                                    <Eye className="w-4 h-4" />
+                                                                </Button>
+                                                            </DialogTrigger>
+                                                            <DialogContent>
+                                                                <DialogHeader>
+                                                                    <DialogTitle>{attachment.filename}</DialogTitle>
+                                                                   
+                                                                </DialogHeader>
+                                                                <Image src={imagePreview?.src || ''} alt={imagePreview?.name || ''} width={500} height={500} />
+                                                            </DialogContent>
+                                                        </Dialog>
+                                                    )}
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => downloadAttachment(attachment)}
+                                                        disabled={downloadingAttachment === attachment.attachmentId}
+                                                        className="h-8 w-8 p-0"
+                                                        title="İndir"
+                                                    >
+                                                        {downloadingAttachment === attachment.attachmentId ? (
+                                                            <LoaderCircle className="w-4 h-4 animate-spin" />
+                                                        ) : (
+                                                            <Download className="w-4 h-4" />
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
                                 </div>
                             </div>
                         )}

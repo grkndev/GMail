@@ -16,10 +16,12 @@ import {
 } from "@/components/ui/sidebar"
 import { usePathname } from "next/navigation"
 import React from "react"
+import { NavigationProvider } from "@/components/Providers/navigation-provider"
 
 export default function Page({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   return (
+    <NavigationProvider>
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
@@ -59,5 +61,6 @@ export default function Page({ children }: { children: React.ReactNode }) {
         </div>
       </SidebarInset>
     </SidebarProvider>
+    </NavigationProvider>
   )
 }
