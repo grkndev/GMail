@@ -9,14 +9,14 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const accessToken = session.accessToken
+    const accessToken = (session as any).accessToken
     const url = new URL(request.url)
     const pageToken = url.searchParams.get('pageToken')
     const maxResults = url.searchParams.get('maxResults') || '20'
     const category = url.searchParams.get('category') || 'primary'
 
     // Inbox için kategori query'leri
-    const getCategoryQuery = (category) => {
+    const getCategoryQuery = (category: string) => {
         switch (category.toLowerCase()) {
             case 'primary':
                 return 'in:inbox category:primary'
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
 
     try {
         // 1. Inbox mesaj listesini al
-        const fetchUrl = new URL(`${CONSTANTS.BASE_URL}/gmail/v1/users/${session.user.google_id}/messages`)
+        const fetchUrl = new URL(`${CONSTANTS.BASE_URL}/gmail/v1/users/${(session as any).user.google_id}/messages`)
         const fetchUrlQuery = new URLSearchParams()
         fetchUrlQuery.set("maxResults", maxResults)
         fetchUrlQuery.set("q", query)
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
                 Authorization: `Bearer ${accessToken}`
             }
         })
-        
+
         if (!listResponse.ok) {
             throw new Error(`Gmail API error: ${listResponse.status}`)
         }
@@ -66,8 +66,8 @@ export async function GET(request: Request) {
         const listData = await listResponse.json()
 
         if (!listData.messages || listData.messages.length === 0) {
-            return NextResponse.json({ 
-                messages: [], 
+            return NextResponse.json({
+                messages: [],
                 nextPageToken: listData.nextPageToken,
                 resultSizeEstimate: listData.resultSizeEstimate || 0,
                 category: category,
@@ -76,8 +76,8 @@ export async function GET(request: Request) {
         }
 
         // 2. Her mesaj için metadata al (paralel)
-        const messagePromises = listData.messages.map(message => 
-            fetch(`${CONSTANTS.BASE_URL}/gmail/v1/users/${session.user.google_id}/messages/${message.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date&metadataHeaders=To&metadataHeaders=Cc&metadataHeaders=Bcc`, {
+        const messagePromises = listData.messages.map((message: any) =>
+            fetch(`${CONSTANTS.BASE_URL}/gmail/v1/users/${(session as any).user.google_id}/messages/${message.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date&metadataHeaders=To&metadataHeaders=Cc&metadataHeaders=Bcc`, {
                 headers: {
                     Authorization: `Bearer ${accessToken}`
                 }
@@ -94,10 +94,10 @@ export async function GET(request: Request) {
         // 3. Inbox mesajlarını frontend için formatla
         const formattedMessages = messages.map(message => {
             const headers = message.payload?.headers || []
-            
+
             // Header'lardan gerekli bilgileri çıkar
-            const getHeader = (name) => {
-                const header = headers.find(h => h.name.toLowerCase() === name.toLowerCase())
+            const getHeader = (name: string) => {
+                const header = headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())
                 return header?.value || ''
             }
 
@@ -109,9 +109,9 @@ export async function GET(request: Request) {
             const bccHeader = getHeader('Bcc')
 
             // From header'ından isim ve email'i ayır
-            const parseEmailHeader = (emailString) => {
+            const parseEmailHeader = (emailString: string) => {
                 if (!emailString) return { name: '', email: '' }
-                
+
                 const match = emailString.match(/^(.+?)\s*<(.+?)>$/)
                 if (match) {
                     return {
@@ -128,7 +128,7 @@ export async function GET(request: Request) {
             const sender = parseEmailHeader(fromHeader)
 
             // Kategori belirle
-            const getMessageCategory = (labelIds) => {
+            const getMessageCategory = (labelIds: string[]) => {
                 if (labelIds?.includes('CATEGORY_SOCIAL')) return 'social'
                 if (labelIds?.includes('CATEGORY_PROMOTIONS')) return 'promotions'
                 if (labelIds?.includes('CATEGORY_UPDATES')) return 'updates'
@@ -137,7 +137,7 @@ export async function GET(request: Request) {
             }
 
             // Öncelik seviyesi belirle
-            const getPriority = (labelIds) => {
+            const getPriority = (labelIds: string[]) => {
                 if (labelIds?.includes('IMPORTANT')) return 'high'
                 if (labelIds?.includes('STARRED')) return 'starred'
                 return 'normal'
@@ -151,7 +151,7 @@ export async function GET(request: Request) {
                 historyId: message.historyId,
                 internalDate: message.internalDate,
                 sizeEstimate: message.sizeEstimate,
-                
+
                 // Formatlanmış veriler
                 from_name: sender.name,
                 from_email: sender.email,
@@ -160,25 +160,25 @@ export async function GET(request: Request) {
                 to: toHeader,
                 cc: ccHeader,
                 bcc: bccHeader,
-                
+
                 // Tarih formatları
                 rawDate: dateHeader,
                 formattedDate: dateHeader ? new Date(dateHeader).toLocaleString('tr-TR') : '',
                 timestamp: dateHeader ? new Date(dateHeader).getTime() : 0,
-                
+
                 // Kategori ve etiketler
                 category: getMessageCategory(message.labelIds),
                 priority: getPriority(message.labelIds),
-                
+
                 // Durumlar
                 isUnread: message.labelIds?.includes('UNREAD') || false,
                 isImportant: message.labelIds?.includes('IMPORTANT') || false,
                 isStarred: message.labelIds?.includes('STARRED') || false,
-                
+
                 // Inbox'a özel özellikler
                 isInInbox: true,
-                hasAttachments: message.payload?.parts?.some(part => part.filename) || false,
-                
+                hasAttachments: message.payload?.parts?.some((part: any) => part.filename) || false,
+
                 // Thread bilgisi
                 threadLength: 1 // Bu değer thread detayından alınabilir
             }
@@ -187,7 +187,7 @@ export async function GET(request: Request) {
         // Tarihe göre sırala (en yeni üstte)
         const sortedMessages = formattedMessages.sort((a, b) => b.timestamp - a.timestamp)
 
-        return NextResponse.json({ 
+        return NextResponse.json({
             messages: sortedMessages,
             nextPageToken: listData.nextPageToken,
             resultSizeEstimate: listData.resultSizeEstimate || 0,
@@ -199,7 +199,7 @@ export async function GET(request: Request) {
     } catch (error) {
         console.error('Inbox API Error:', error)
         return NextResponse.json(
-            { error: "Inbox API hatası", details: error.message }, 
+            { error: "Inbox API hatası", details: (error as Error).message },
             { status: 500 }
         );
     }

@@ -31,10 +31,8 @@ export const dumyGmailMessage: GmailMessage[] = [
     labelIds: ["INBOX", "IMPORTANT"],
     snippet: "This is a sample email snippet for demonstration purposes.",
     subject: "Welcome to Gmail Clone!",
-    from: {
-      name: "John Doe",
-      email: "john.doe@example.com"
-    },
+    from_name: "John Doe",
+    from_email: "john.doe@example.com",
     to: "you@example.com",
     cc: "",
     category: "primary",
@@ -54,10 +52,8 @@ export const dumyGmailMessage: GmailMessage[] = [
     labelIds: ["INBOX", "IMPORTANT"],
     snippet: "This is a sample email snippet for demonstration purposes.",
     subject: "Welcome to Gmail Clone 2! Welcome to Gmail CloneWelcome to Gmail CloneWelcome to Gmail CloneWelcome to Gmail CloneWelcome to Gmail CloneWelcome to Gmail CloneWelcome to Gmail Clone",
-    from: {
-      name: "John Doe 2",
-      email: "john.doe2@example.com"
-    },
+    from_name: "John Doe 2",
+    from_email: "john.doe2@example.com",
     to: "you@example.com",
     cc: "",
     category: "primary",
