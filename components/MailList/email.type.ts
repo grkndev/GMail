@@ -47,6 +47,7 @@ export type GmailMessage = {
     isImportant: boolean
     isSpam: boolean
     isTrash: boolean
+    isUnread: boolean
 
     sizeEstimate: number
 }

@@ -23,25 +23,51 @@ export const BADGE_VARIANTS: Record<string, string> = {
   forums: "bg-yellow-500 text-white",
   social: "bg-gray-500 text-white",
 }
-export const dumyGmailMessage: GmailMessage = {
-  id: "1",
-  historyId: "1001",
-  threadId: "thread-1",
-  labelIds: ["INBOX", "IMPORTANT"],
-  snippet: "This is a sample email snippet for demonstration purposes.",
-  subject: "Welcome to Gmail Clone!",
-  from: {
-    name: "John Doe",
-    email: "john.doe@example.com"
+export const dumyGmailMessage: GmailMessage[] = [
+  {
+    id: "1",
+    historyId: "1001",
+    threadId: "thread-1",
+    labelIds: ["INBOX", "IMPORTANT"],
+    snippet: "This is a sample email snippet for demonstration purposes.",
+    subject: "Welcome to Gmail Clone!",
+    from: {
+      name: "John Doe",
+      email: "john.doe@example.com"
+    },
+    to: "you@example.com",
+    cc: "",
+    category: "primary",
+    date: "2024-06-01T10:00:00Z",
+    formattedDate: "Jun 1, 2024 - 10:00 AM",
+    internalDate: "1717236000000",
+    isImportant: true,
+    isSpam: false,
+    isTrash: false,
+    isUnread: true,
+    sizeEstimate: 2048
   },
-  to: "you@example.com",
-  cc: "",
-  category: "primary",
-  date: "2024-06-01T10:00:00Z",
-  formattedDate: "Jun 1, 2024 - 10:00 AM",
-  internalDate: "1717236000000",
-  isImportant: true,
-  isSpam: false,
-  isTrash: false,
-  sizeEstimate: 2048
-}
+  {
+    id: "2",
+    historyId: "1002",
+    threadId: "thread-2",
+    labelIds: ["INBOX", "IMPORTANT"],
+    snippet: "This is a sample email snippet for demonstration purposes.",
+    subject: "Welcome to Gmail Clone 2! Welcome to Gmail CloneWelcome to Gmail CloneWelcome to Gmail CloneWelcome to Gmail CloneWelcome to Gmail CloneWelcome to Gmail CloneWelcome to Gmail Clone",
+    from: {
+      name: "John Doe 2",
+      email: "john.doe2@example.com"
+    },
+    to: "you@example.com",
+    cc: "",
+    category: "primary",
+    date: "2025-06-01T10:00:00Z",
+    formattedDate: "Jun 1, 2025 - 10:00 AM",
+    internalDate: "1717236000000",
+    isImportant: true,
+    isSpam: false,
+    isTrash: false,
+    isUnread: false,
+    sizeEstimate: 2048
+  }
+]

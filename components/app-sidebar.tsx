@@ -42,31 +42,31 @@ const data = {
   navMain: [
     {
       title: "Incoming",
-      url: "#",
+      url: "#inbox",
       icon: Inbox,
 
     },
     {
       title: "Starred",
-      url: "#",
+      url: "#starred",
       icon: Star,
 
     },
     {
       title: "Outbox",
-      url: "#",
+      url: "#outbox",
       icon: Send,
 
     },
     {
       title: "Spam",
-      url: "#",
+      url: "#spam",
       icon: Mail,
 
     },
     {
       title: "Trash",
-      url: "#",
+      url: "#trash",
       icon: Trash,
     },
 

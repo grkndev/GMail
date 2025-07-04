@@ -8,7 +8,11 @@ import { format } from "date-fns"
 import { GmailMessage } from "./email.type"
 import { Badge } from "../ui/badge"
 import { BADGE_VARIANTS } from "@/lib/utils"
-
+import {
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger,
+} from "@/components/ui/hover-card"
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
 
@@ -50,7 +54,12 @@ export const columns: ColumnDef<GmailMessage>[] = [
             )
         },
         cell: ({ row }) => {
-            return <div className="w-fit ">{row.original.from.name}</div>
+            return <HoverCard>
+                <HoverCardTrigger> <div className="w-fit ">{row.original.from.name}</div></HoverCardTrigger>
+                <HoverCardContent>
+                    <p>{row.original.from.email}</p>
+                </HoverCardContent>
+            </HoverCard>
         },
     },
 
@@ -65,8 +74,8 @@ export const columns: ColumnDef<GmailMessage>[] = [
                         {row.original.category.charAt(0).toUpperCase() + row.original.category.slice(1)}
                     </Badge>
                 )}
-                <div className="w-full truncate max-w-[400px]">
-                    <p title={row.original.subject} className="text-sm">{row.original.subject}</p>
+                <div className="w-full  max-w-[400px]">
+                    <p title={row.original.subject} className="text-sm truncate">{row.original.subject}</p>
                 </div>
             </div>
         },
