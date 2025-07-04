@@ -5,6 +5,7 @@ import { CONSTANTS, dumyGmailMessage } from "@/lib/utils"
 import { columns } from "./columns"
 import { GmailMessage } from "./email.type"
 import { DataTable } from "./data-table"
+import { LoaderCircle } from "lucide-react"
 
 // Mapping hash values to API endpoint paths
 const HASH_TO_ENDPOINT_MAP: Record<string, string> = {
@@ -94,8 +95,8 @@ export default function MailListPage() {
     if (loading) {
         return (
             <div className="w-full py-10 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                <div className="text-center flex flex-col items-center gap-2">
+                    <LoaderCircle className="w-8 h-8 text-gray-600 animate-spin" />
                     <p className="mt-2 text-sm text-gray-600">Loading emails...</p>
                 </div>
             </div>
