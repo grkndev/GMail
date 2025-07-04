@@ -37,15 +37,18 @@ import DataTablePagination from "./pagination"
 import { cn } from "@/lib/utils"
 import { Archive, MailOpen, MailWarning, RefreshCcw, TrashIcon } from "lucide-react"
 import { GmailMessage } from "./email.type"
+import { toast } from "sonner"
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[]
     data: TData[]
+    onRefresh?: () => void
 }
 
 export function DataTable<TData, TValue>({
     columns,
     data,
+    onRefresh,
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = useState<SortingState>([])
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
@@ -69,6 +72,38 @@ export function DataTable<TData, TValue>({
         },
     })
 
+    const handleDelete = (messageIds: string[], permanent: boolean = false) => {
+        const newData = data
+            .filter((_, index) => messageIds.includes(index.toString()))
+            .map((message) => (message as GmailMessage).id)
+
+        const endpoint = permanent ? "/api/mails/batchDelete" : "/api/mails/trash"
+        const successMessage = permanent ? "Emails permanently deleted" : "Emails moved to trash"
+
+        fetch(endpoint, {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ messageIds: newData }),
+        }).then(async (res) => {
+            if (res.ok) {
+                toast.success(successMessage)
+                setRowSelection({})
+                // Refresh the data after successful deletion
+                if (onRefresh) {
+                    onRefresh()
+                }
+            } else {
+                const errorData = await res.json()
+                toast.error(`Failed to delete emails: ${errorData.error}`)
+            }
+        }).catch((error) => {
+            console.error('Delete operation failed:', error)
+            toast.error("Failed to delete emails")
+        })
+    }
+
     return (
         <div className="w-full h-full flex flex-col gap-4">
             <div className="flex items-center gap-2">
@@ -80,7 +115,7 @@ export function DataTable<TData, TValue>({
                     }
                     className="max-w-sm"
                 />
-                <Button variant={"outline"}>
+                <Button variant={"outline"} onClick={onRefresh}>
                     <RefreshCcw className="w-4 h-4" />
                     <span>Refresh</span>
                 </Button>
@@ -96,15 +131,25 @@ export function DataTable<TData, TValue>({
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                     <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                        <AlertDialogTitle>Choose delete action</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            This action cannot be undone. This will permanently delete the selected emails
-                                            and remove them from your inbox.
+                                            Please choose how you want to delete the selected {Object.keys(rowSelection).length} email{Object.keys(rowSelection).length > 1 ? 's' : ''}:
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
-                                    <AlertDialogFooter>
+                                    <AlertDialogFooter className="flex-col sm:flex-row gap-2">
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction className="bg-red-500 hover:bg-red-600">Delete</AlertDialogAction>
+                                        <AlertDialogAction 
+                                            className="bg-orange-500 hover:bg-orange-600" 
+                                            onClick={() => handleDelete(Object.keys(rowSelection) as string[], false)}
+                                        >
+                                            Move to Trash
+                                        </AlertDialogAction>
+                                        <AlertDialogAction 
+                                            className="bg-red-500 hover:bg-red-600" 
+                                            onClick={() => handleDelete(Object.keys(rowSelection) as string[], true)}
+                                        >
+                                            Delete Permanently
+                                        </AlertDialogAction>
                                     </AlertDialogFooter>
                                 </AlertDialogContent>
                             </AlertDialog>

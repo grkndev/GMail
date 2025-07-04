@@ -122,7 +122,11 @@ export default function MailListPage() {
 
     return (
         <div className="w-full py-10">
-            <DataTable columns={columns} data={data} />
+            <DataTable 
+                columns={columns} 
+                data={data} 
+                onRefresh={() => loadData(currentHash)}
+            />
         </div>
     )
 }
