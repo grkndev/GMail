@@ -33,6 +33,12 @@ export function NavMain({
     }[]
   }[]
 }) {
+  const handleNavigation = (url: string) => {
+    // Extract hash from URL (e.g., "#inbox" from url)
+    const hash = url.startsWith('#') ? url : `#${url}`
+    window.location.hash = hash
+  }
+
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
@@ -40,11 +46,13 @@ export function NavMain({
         {items.map((item) => (
           <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip={item.title}>
-                <a href={item.url}>
-                  <item.icon />
-                  <span>{item.title}</span>
-                </a>
+              <SidebarMenuButton 
+                tooltip={item.title}
+                onClick={() => handleNavigation(item.url)}
+                className="cursor-pointer"
+              >
+                <item.icon />
+                <span>{item.title}</span>
               </SidebarMenuButton>
               {item.items?.length ? (
                 <>
@@ -58,10 +66,11 @@ export function NavMain({
                     <SidebarMenuSub>
                       {item.items?.map((subItem) => (
                         <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild>
-                            <a href={subItem.url}>
-                              <span>{subItem.title}</span>
-                            </a>
+                          <SidebarMenuSubButton 
+                            onClick={() => handleNavigation(subItem.url)}
+                            className="cursor-pointer"
+                          >
+                            <span>{subItem.title}</span>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                       ))}

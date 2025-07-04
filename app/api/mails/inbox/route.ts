@@ -14,44 +14,40 @@ export async function GET(request: Request) {
     const pageToken = url.searchParams.get('pageToken')
     const maxResults = url.searchParams.get('maxResults') || '20'
     const category = url.searchParams.get('category') || 'primary'
-    
-    // Gmail kategorileri için query'leri tanımla
+
+    // Inbox için kategori query'leri
     const getCategoryQuery = (category) => {
         switch (category.toLowerCase()) {
             case 'primary':
-                return 'category:primary'
+                return 'in:inbox category:primary'
             case 'social':
-                return 'category:social'
+                return 'in:inbox category:social'
             case 'promotions':
-                return 'category:promotions'
+                return 'in:inbox category:promotions'
             case 'updates':
-                return 'category:updates'
+                return 'in:inbox category:updates'
             case 'forums':
-                return 'category:forums'
+                return 'in:inbox category:forums'
             case 'unread':
-                return 'is:unread'
-            case 'sent':
-                return 'in:sent'
-            case 'drafts':
-                return 'in:drafts'
-            case 'trash':
-                return 'in:trash'
-            case 'spam':
-                return 'in:spam'
+                return 'in:inbox is:unread'
+            case 'important':
+                return 'in:inbox is:important'
+            case 'starred':
+                return 'in:inbox is:starred'
             default:
-                return 'category:primary'
+                return 'in:inbox category:primary'
         }
     }
-    
+
     const query = getCategoryQuery(category)
 
     try {
-        // 1. Mesaj listesini al
+        // 1. Inbox mesaj listesini al
         const fetchUrl = new URL(`${CONSTANTS.BASE_URL}/gmail/v1/users/${session.user.google_id}/messages`)
         const fetchUrlQuery = new URLSearchParams()
         fetchUrlQuery.set("maxResults", maxResults)
         fetchUrlQuery.set("q", query)
-        fetchUrlQuery.set("includeSpamTrash", "false")
+        fetchUrlQuery.set("includeSpamTrash", "false") // Spam/trash'i dahil etme
         if (pageToken) {
             fetchUrlQuery.set("pageToken", pageToken)
         }
@@ -73,13 +69,15 @@ export async function GET(request: Request) {
             return NextResponse.json({ 
                 messages: [], 
                 nextPageToken: listData.nextPageToken,
-                resultSizeEstimate: listData.resultSizeEstimate || 0
+                resultSizeEstimate: listData.resultSizeEstimate || 0,
+                category: category,
+                type: 'inbox'
             });
         }
 
         // 2. Her mesaj için metadata al (paralel)
         const messagePromises = listData.messages.map(message => 
-            fetch(`${CONSTANTS.BASE_URL}/gmail/v1/users/${session.user.google_id}/messages/${message.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date&metadataHeaders=To&metadataHeaders=Cc`, {
+            fetch(`${CONSTANTS.BASE_URL}/gmail/v1/users/${session.user.google_id}/messages/${message.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date&metadataHeaders=To&metadataHeaders=Cc&metadataHeaders=Bcc`, {
                 headers: {
                     Authorization: `Bearer ${accessToken}`
                 }
@@ -93,7 +91,7 @@ export async function GET(request: Request) {
 
         const messages = await Promise.all(messagePromises)
 
-        // 3. Mesajları frontend için uygun formata çevir
+        // 3. Inbox mesajlarını frontend için formatla
         const formattedMessages = messages.map(message => {
             const headers = message.payload?.headers || []
             
@@ -108,12 +106,13 @@ export async function GET(request: Request) {
             const dateHeader = getHeader('Date')
             const toHeader = getHeader('To')
             const ccHeader = getHeader('Cc')
+            const bccHeader = getHeader('Bcc')
 
             // From header'ından isim ve email'i ayır
-            const parseFromHeader = (from) => {
-                if (!from) return { name: '', email: '' }
+            const parseEmailHeader = (emailString) => {
+                if (!emailString) return { name: '', email: '' }
                 
-                const match = from.match(/^(.+?)\s*<(.+?)>$/)
+                const match = emailString.match(/^(.+?)\s*<(.+?)>$/)
                 if (match) {
                     return {
                         name: match[1].replace(/"/g, '').trim(),
@@ -121,20 +120,27 @@ export async function GET(request: Request) {
                     }
                 }
                 return {
-                    name: from.includes('@') ? '' : from,
-                    email: from.includes('@') ? from : ''
+                    name: emailString.includes('@') ? '' : emailString,
+                    email: emailString.includes('@') ? emailString : ''
                 }
             }
 
-            const sender = parseFromHeader(fromHeader)
+            const sender = parseEmailHeader(fromHeader)
 
-            // Kategoriye göre sınıflandır
+            // Kategori belirle
             const getMessageCategory = (labelIds) => {
                 if (labelIds?.includes('CATEGORY_SOCIAL')) return 'social'
                 if (labelIds?.includes('CATEGORY_PROMOTIONS')) return 'promotions'
                 if (labelIds?.includes('CATEGORY_UPDATES')) return 'updates'
                 if (labelIds?.includes('CATEGORY_FORUMS')) return 'forums'
                 return 'primary'
+            }
+
+            // Öncelik seviyesi belirle
+            const getPriority = (labelIds) => {
+                if (labelIds?.includes('IMPORTANT')) return 'high'
+                if (labelIds?.includes('STARRED')) return 'starred'
+                return 'normal'
             }
 
             return {
@@ -145,37 +151,54 @@ export async function GET(request: Request) {
                 historyId: message.historyId,
                 internalDate: message.internalDate,
                 sizeEstimate: message.sizeEstimate,
+                
                 // Formatlanmış veriler
                 from: sender,
                 subject: subjectHeader || '(Konu yok)',
                 date: dateHeader,
                 to: toHeader,
                 cc: ccHeader,
-                // Tarih formatı
+                bcc: bccHeader,
+                
+                // Tarih formatları
+                rawDate: dateHeader,
                 formattedDate: dateHeader ? new Date(dateHeader).toLocaleString('tr-TR') : '',
-                // Kategori
+                timestamp: dateHeader ? new Date(dateHeader).getTime() : 0,
+                
+                // Kategori ve etiketler
                 category: getMessageCategory(message.labelIds),
-                // Okunmamış mı?
+                priority: getPriority(message.labelIds),
+                
+                // Durumlar
                 isUnread: message.labelIds?.includes('UNREAD') || false,
-                // Önemli mi?
                 isImportant: message.labelIds?.includes('IMPORTANT') || false,
-                // Spam/Trash kontrolü
-                isSpam: message.labelIds?.includes('SPAM') || false,
-                isTrash: message.labelIds?.includes('TRASH') || false
+                isStarred: message.labelIds?.includes('STARRED') || false,
+                
+                // Inbox'a özel özellikler
+                isInInbox: true,
+                hasAttachments: message.payload?.parts?.some(part => part.filename) || false,
+                
+                // Thread bilgisi
+                threadLength: 1 // Bu değer thread detayından alınabilir
             }
         })
 
+        // Tarihe göre sırala (en yeni üstte)
+        const sortedMessages = formattedMessages.sort((a, b) => b.timestamp - a.timestamp)
+
         return NextResponse.json({ 
-            messages: formattedMessages,
+            messages: sortedMessages,
             nextPageToken: listData.nextPageToken,
             resultSizeEstimate: listData.resultSizeEstimate || 0,
-            category: category
+            category: category,
+            type: 'inbox',
+            hasMore: !!listData.nextPageToken
         });
 
     } catch (error) {
-        console.error('Gmail API Error:', error)
+        console.error('Inbox API Error:', error)
         return NextResponse.json(
-            { error: "Gmail API hatası", details: error.message }, 
+            { error: "Inbox API hatası", details: error.message }, 
             { status: 500 }
         );
     }
