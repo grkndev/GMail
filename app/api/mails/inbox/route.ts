@@ -153,7 +153,8 @@ export async function GET(request: Request) {
                 sizeEstimate: message.sizeEstimate,
                 
                 // Formatlanmış veriler
-                from: sender,
+                from_name: sender.name,
+                from_email: sender.email,
                 subject: subjectHeader || '(Konu yok)',
                 date: dateHeader,
                 to: toHeader,

@@ -31,10 +31,8 @@ export type GmailMessage = {
     snippet: string
     subject: string
 
-    from: {
-        name: string
-        email: string
-    }
+    from_name: string
+    from_email: string
     to: string
     cc: string
 

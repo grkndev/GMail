@@ -41,7 +41,7 @@ export const columns: ColumnDef<GmailMessage>[] = [
         enableHiding: false,
     },
     {
-        accessorKey: "from",
+        accessorKey: "from_name",
         header: ({ column }) => {
             return (
                 <Button
@@ -55,9 +55,9 @@ export const columns: ColumnDef<GmailMessage>[] = [
         },
         cell: ({ row }) => {
             return <HoverCard>
-                <HoverCardTrigger> <div className="w-fit ">{row.original.from.name}</div></HoverCardTrigger>
+                <HoverCardTrigger> <div className="w-fit ">{row.original.from_name}</div></HoverCardTrigger>
                 <HoverCardContent>
-                    <p>{row.original.from.email}</p>
+                    <p>{row.original.from_email}</p>
                 </HoverCardContent>
             </HoverCard>
         },
