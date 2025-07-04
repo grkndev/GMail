@@ -16,6 +16,7 @@ export default function Home() {
 
   return (
     <main className="flex w-full bg-gray-50 h-screen">
+      <title>Gmail Clone</title>
       <div className="bg-white w-1/2 h-full flex flex-col items-center justify-center p-8 shadow-lg">
         <div className="max-w-md w-full space-y-6">
           <div className="text-center">

@@ -5,36 +5,15 @@ import { Button } from "../ui/button"
 import { ArrowUpDown } from "lucide-react"
 import { Checkbox } from "../ui/checkbox"
 import { format } from "date-fns"
-import { cn } from "@/lib/utils"
+import { GmailMessage } from "./email.type"
+import { Badge } from "../ui/badge"
+import { BADGE_VARIANTS } from "@/lib/utils"
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
-export type Email = {
-    id: string
-    from: string
-    sender: string
-    to: string
-    subject: string
-    date: string
-    body: string
-}
-export type EmailInboxList = {
-    id: string
-    from: string
-    sender_mail?: string
-    sender_name: string
-    subject: string
-    date: string
-    is_read: boolean
-    is_starred: boolean
-    is_important: boolean
-    is_spam: boolean
-    is_draft: boolean
-    is_sent: boolean
-    is_trash: boolean
-}
 
-export const columns: ColumnDef<EmailInboxList>[] = [
+
+export const columns: ColumnDef<GmailMessage>[] = [
     {
         id: "select",
         header: ({ table }) => (
@@ -70,18 +49,27 @@ export const columns: ColumnDef<EmailInboxList>[] = [
                 </Button>
             )
         },
-        // cell: ({ row }) => {
-        //     return <div className="w-fit bg-black">{row.original.from}</div>
-        // },
+        cell: ({ row }) => {
+            return <div className="w-fit ">{row.original.from.name}</div>
+        },
     },
-   
+
     {
         accessorKey: "subject",
         header: "Subject",
-        
-        // cell: ({ row }) => {
-        //     return <div className="w-full bg-black">{row.original.subject}</div>
-        // },
+
+        cell: ({ row }) => {
+            return <div className="flex items-center gap-2">
+                {row.original.category && (
+                    <Badge variant="outline" className={`text-xs`}>
+                        {row.original.category.charAt(0).toUpperCase() + row.original.category.slice(1)}
+                    </Badge>
+                )}
+                <div className="w-full truncate max-w-[400px]">
+                    <p title={row.original.subject} className="text-sm">{row.original.subject}</p>
+                </div>
+            </div>
+        },
     },
     {
         accessorKey: "date",

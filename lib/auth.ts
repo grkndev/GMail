@@ -23,7 +23,7 @@ export const authOptions: NextAuthOptions = {
 
     session: {
         strategy: "jwt",
-        maxAge: 30 * 24 * 60 * 60, // 30 gün
+        // maxAge: 30 * 24 * 60 * 60, // 30 gün
     },
 
     callbacks: {
@@ -37,6 +37,7 @@ export const authOptions: NextAuthOptions = {
         async session({ session, token }) {
             (session as any).accessToken = token.accessToken as string
             (session as any).id_token = token.id_token as string
+            (session as any).user.google_id = token.sub as string
             return session
         }
     },

@@ -1,27 +1,31 @@
-import { columns, EmailInboxList } from "./columns"
+import { CONSTANTS, dumyGmailMessage } from "@/lib/utils"
+import { columns } from "./columns"
+import { GmailMessage } from "./email.type"
 import { DataTable } from "./data-table"
+import { headers } from "next/headers";
 
-async function getData(): Promise<EmailInboxList[]> {
+async function getData(): Promise<GmailMessage[]> {
     // Fetch data from your API here.
-    return Array.from({ length: 100 }).map((_, index) => ({
-        id: index.toString(),
-        from: `John Doe ${index}`,
-        subject: `Hello ${index}`,
-        date: new Date().toISOString(),
-        is_read: index % 2 === 0,
-        is_starred: false,
-        is_important: false,
-        is_spam: false,
-        is_draft: false,
-        is_sent: false,
-        is_trash: false,
-        sender_mail: `john.doe${index}@example.com`,
-        sender_name: `John Doe ${index}`,
-    })) as EmailInboxList[]
+    return [dumyGmailMessage]
+
+    const response = await fetch(`${CONSTANTS.LOCAL_BASE_URL}/api/mails`, { 
+        method: "GET", 
+        headers: {
+            'Cookie': (await headers()).get('cookie') || ''
+        }
+    })
+    
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json()
+    return data.messages as GmailMessage[]
 }
 
 export default async function DemoPage() {
     const data = await getData()
+    // console.log(data)
 
     return (
         <div className="w-full py-10">
