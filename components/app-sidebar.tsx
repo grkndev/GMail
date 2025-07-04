@@ -47,11 +47,6 @@ const data = {
       icon: Inbox,
     },
     {
-      title: "Starred",
-      url: "#starred",
-      icon: Star,
-    },
-    {
       title: "Outbox",
       url: "#outbox",
       icon: Send,
