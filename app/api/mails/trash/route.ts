@@ -1,5 +1,5 @@
 import { authOptions } from "@/lib/auth";
-import { CONSTANTS } from "@/lib/utils";
+import { CONSTANTS, getHeader, getMessageCategory, getPriority, parseEmailHeader } from "@/lib/utils";
 import { getServerSession } from "next-auth/next";
 import { NextResponse } from "next/server";
 
@@ -69,53 +69,14 @@ export async function GET(request: Request) {
         const formattedMessages = messages.map((message: any) => {
             const headers = message.payload?.headers || []
 
-            // Header'lardan gerekli bilgileri çıkar
-            const getHeader = (name: string) => {
-                const header = headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())
-                return header?.value || ''
-            }
-
-            const fromHeader = getHeader('From')
-            const subjectHeader = getHeader('Subject')
-            const dateHeader = getHeader('Date')
-            const toHeader = getHeader('To')
-            const ccHeader = getHeader('Cc')
-            const bccHeader = getHeader('Bcc')
-
-            // From header'ından isim ve email'i ayır
-            const parseEmailHeader = (emailString: string) => {
-                if (!emailString) return { name: '', email: '' }
-
-                const match = emailString.match(/^(.+?)\s*<(.+?)>$/)
-                if (match) {
-                    return {
-                        name: match[1].replace(/"/g, '').trim(),
-                        email: match[2].trim()
-                    }
-                }
-                return {
-                    name: emailString.includes('@') ? '' : emailString,
-                    email: emailString.includes('@') ? emailString : ''
-                }
-            }
+            const fromHeader = getHeader('From', headers)
+            const subjectHeader = getHeader('Subject', headers)
+            const dateHeader = getHeader('Date', headers)
+            const toHeader = getHeader('To', headers)
+            const ccHeader = getHeader('Cc', headers)
+            const bccHeader = getHeader('Bcc', headers)
 
             const sender = parseEmailHeader(fromHeader)
-
-            // Kategori belirle
-            const getMessageCategory = (labelIds: string[]) => {
-                if (labelIds?.includes('CATEGORY_SOCIAL')) return 'social'
-                if (labelIds?.includes('CATEGORY_PROMOTIONS')) return 'promotions'
-                if (labelIds?.includes('CATEGORY_UPDATES')) return 'updates'
-                if (labelIds?.includes('CATEGORY_FORUMS')) return 'forums'
-                return 'primary'
-            }
-
-            // Öncelik seviyesi belirle
-            const getPriority = (labelIds: string[]) => {
-                if (labelIds?.includes('IMPORTANT')) return 'high'
-                if (labelIds?.includes('STARRED')) return 'starred'
-                return 'normal'
-            }
 
             return {
                 id: message.id,
@@ -150,7 +111,7 @@ export async function GET(request: Request) {
                 isStarred: message.labelIds?.includes('STARRED') || false,
 
                 // Inbox'a özel özellikler
-                isInInbox: true,
+                isInInbox: false,
                 hasAttachments: message.payload?.parts?.some((part: any) => part.filename) || false,
 
                 // Thread bilgisi
@@ -171,9 +132,9 @@ export async function GET(request: Request) {
         });
 
     } catch (error) {
-        console.error('Inbox API Error:', error)
+        console.error('Trash API Error:', error)
         return NextResponse.json(
-            { error: "Inbox API hatası", details: (error as Error).message },
+            { error: "Trash API hatası", details: (error as Error).message },
             { status: 500 }
         );
     }
@@ -216,7 +177,7 @@ export async function POST(request: Request) {
     try {
         // Use Gmail API trash endpoint for each message (parallel calls)
         // Note: Gmail API doesn't have batch trash operation, so we use parallel individual calls
-        const trashPromises = messageIds.map(messageId => 
+        const trashPromises = messageIds.map(messageId =>
             fetch(`${CONSTANTS.BASE_URL}/gmail/v1/users/${(session as any).user.google_id}/messages/${messageId}/trash`, {
                 method: 'POST',
                 headers: {
@@ -235,7 +196,7 @@ export async function POST(request: Request) {
         );
 
         const results = await Promise.all(trashPromises);
-        
+
         // Separate successful and failed operations
         const successful = results.filter(result => result.success);
         const failed = results.filter(result => !result.success);
@@ -243,7 +204,7 @@ export async function POST(request: Request) {
         // Return response with detailed results
         return NextResponse.json({
             success: successful.length > 0,
-            message: failed.length === 0 
+            message: failed.length === 0
                 ? `${successful.length} mesaj başarıyla çöp kutusuna taşındı`
                 : `${successful.length} mesaj çöp kutusuna taşındı, ${failed.length} mesaj başarısız`,
             totalCount: messageIds.length,
@@ -257,8 +218,8 @@ export async function POST(request: Request) {
     } catch (error) {
         console.error('Trash API Error:', error)
         return NextResponse.json(
-            { 
-                error: "Çöp kutusuna taşıma hatası", 
+            {
+                error: "Çöp kutusuna taşıma hatası",
                 details: (error as Error).message,
                 success: false
             },

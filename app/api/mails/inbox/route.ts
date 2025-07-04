@@ -2,6 +2,8 @@ import { authOptions } from "@/lib/auth";
 import { CONSTANTS } from "@/lib/utils";
 import { getServerSession } from "next-auth/next";
 import { NextResponse } from "next/server";
+import { getCategoryQuery, getHeader, getMessageCategory, getPriority, parseEmailHeader } from "@/lib/utils";
+
 
 export async function GET(request: Request) {
     const session = await getServerSession(authOptions)
@@ -15,29 +17,6 @@ export async function GET(request: Request) {
     const maxResults = url.searchParams.get('maxResults') || '20'
     const category = url.searchParams.get('category') || 'primary'
 
-    // Inbox için kategori query'leri
-    const getCategoryQuery = (category: string) => {
-        switch (category.toLowerCase()) {
-            case 'primary':
-                return 'in:inbox category:primary'
-            case 'social':
-                return 'in:inbox category:social'
-            case 'promotions':
-                return 'in:inbox category:promotions'
-            case 'updates':
-                return 'in:inbox category:updates'
-            case 'forums':
-                return 'in:inbox category:forums'
-            case 'unread':
-                return 'in:inbox is:unread'
-            case 'important':
-                return 'in:inbox is:important'
-            case 'starred':
-                return 'in:inbox is:starred'
-            default:
-                return 'in:inbox category:primary'
-        }
-    }
 
     const query = getCategoryQuery(category)
 
@@ -46,7 +25,7 @@ export async function GET(request: Request) {
         const fetchUrl = new URL(`${CONSTANTS.BASE_URL}/gmail/v1/users/${(session as any).user.google_id}/messages`)
         const fetchUrlQuery = new URLSearchParams()
         fetchUrlQuery.set("maxResults", maxResults)
-        fetchUrlQuery.set("q", query)
+        fetchUrlQuery.set("q", `in:inbox ${query}`)
         fetchUrlQuery.set("includeSpamTrash", "false") // Spam/trash'i dahil etme
         if (pageToken) {
             fetchUrlQuery.set("pageToken", pageToken)
@@ -95,53 +74,17 @@ export async function GET(request: Request) {
         const formattedMessages = messages.map(message => {
             const headers = message.payload?.headers || []
 
-            // Header'lardan gerekli bilgileri çıkar
-            const getHeader = (name: string) => {
-                const header = headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())
-                return header?.value || ''
-            }
 
-            const fromHeader = getHeader('From')
-            const subjectHeader = getHeader('Subject')
-            const dateHeader = getHeader('Date')
-            const toHeader = getHeader('To')
-            const ccHeader = getHeader('Cc')
-            const bccHeader = getHeader('Bcc')
+            const fromHeader = getHeader('From', headers)
+            const subjectHeader = getHeader('Subject', headers)
+            const dateHeader = getHeader('Date', headers)
+            const toHeader = getHeader('To', headers)
+            const ccHeader = getHeader('Cc', headers)
+            const bccHeader = getHeader('Bcc', headers)
 
-            // From header'ından isim ve email'i ayır
-            const parseEmailHeader = (emailString: string) => {
-                if (!emailString) return { name: '', email: '' }
 
-                const match = emailString.match(/^(.+?)\s*<(.+?)>$/)
-                if (match) {
-                    return {
-                        name: match[1].replace(/"/g, '').trim(),
-                        email: match[2].trim()
-                    }
-                }
-                return {
-                    name: emailString.includes('@') ? '' : emailString,
-                    email: emailString.includes('@') ? emailString : ''
-                }
-            }
 
             const sender = parseEmailHeader(fromHeader)
-
-            // Kategori belirle
-            const getMessageCategory = (labelIds: string[]) => {
-                if (labelIds?.includes('CATEGORY_SOCIAL')) return 'social'
-                if (labelIds?.includes('CATEGORY_PROMOTIONS')) return 'promotions'
-                if (labelIds?.includes('CATEGORY_UPDATES')) return 'updates'
-                if (labelIds?.includes('CATEGORY_FORUMS')) return 'forums'
-                return 'primary'
-            }
-
-            // Öncelik seviyesi belirle
-            const getPriority = (labelIds: string[]) => {
-                if (labelIds?.includes('IMPORTANT')) return 'high'
-                if (labelIds?.includes('STARRED')) return 'starred'
-                return 'normal'
-            }
 
             return {
                 id: message.id,

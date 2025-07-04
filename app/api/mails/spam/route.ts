@@ -1,5 +1,5 @@
 import { authOptions } from "@/lib/auth";
-import { CONSTANTS } from "@/lib/utils";
+import { CONSTANTS, getHeader, getMessageCategory, getPriority, parseEmailHeader } from "@/lib/utils";
 import { getServerSession } from "next-auth/next";
 import { NextResponse } from "next/server";
 
@@ -69,53 +69,14 @@ export async function GET(request: Request) {
         const formattedMessages = messages.map((message: any) => {
             const headers = message.payload?.headers || []
 
-            // Header'lardan gerekli bilgileri çıkar
-            const getHeader = (name: string) => {
-                const header = headers.find((h: any) => h.name.toLowerCase() === name.toLowerCase())
-                return header?.value || ''
-            }
-
-            const fromHeader = getHeader('From')
-            const subjectHeader = getHeader('Subject')
-            const dateHeader = getHeader('Date')
-            const toHeader = getHeader('To')
-            const ccHeader = getHeader('Cc')
-            const bccHeader = getHeader('Bcc')
-
-            // From header'ından isim ve email'i ayır
-            const parseEmailHeader = (emailString: string) => {
-                if (!emailString) return { name: '', email: '' }
-
-                const match = emailString.match(/^(.+?)\s*<(.+?)>$/)
-                if (match) {
-                    return {
-                        name: match[1].replace(/"/g, '').trim(),
-                        email: match[2].trim()
-                    }
-                }
-                return {
-                    name: emailString.includes('@') ? '' : emailString,
-                    email: emailString.includes('@') ? emailString : ''
-                }
-            }
+            const fromHeader = getHeader('From', headers)
+            const subjectHeader = getHeader('Subject', headers)
+            const dateHeader = getHeader('Date', headers)
+            const toHeader = getHeader('To', headers)
+            const ccHeader = getHeader('Cc', headers)
+            const bccHeader = getHeader('Bcc', headers)
 
             const sender = parseEmailHeader(fromHeader)
-
-            // Kategori belirle
-            const getMessageCategory = (labelIds: string[]) => {
-                if (labelIds?.includes('CATEGORY_SOCIAL')) return 'social'
-                if (labelIds?.includes('CATEGORY_PROMOTIONS')) return 'promotions'
-                if (labelIds?.includes('CATEGORY_UPDATES')) return 'updates'
-                if (labelIds?.includes('CATEGORY_FORUMS')) return 'forums'
-                return 'primary'
-            }
-
-            // Öncelik seviyesi belirle
-            const getPriority = (labelIds: string[]) => {
-                if (labelIds?.includes('IMPORTANT')) return 'high'
-                if (labelIds?.includes('STARRED')) return 'starred'
-                return 'normal'
-            }
 
             return {
                 id: message.id,
