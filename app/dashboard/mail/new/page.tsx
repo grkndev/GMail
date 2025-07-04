@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { useNavigation } from "@/components/Providers/navigation-provider"
+import { fileToBase64, validateEmail, formatFileSize } from "@/lib/utils"
 
 interface EmailFormData {
     to: string[]
@@ -30,7 +31,7 @@ export default function NewMailPage() {
     const router = useRouter()
     const { navigateBack } = useNavigation()
     const bodyRef = useRef<HTMLTextAreaElement>(null)
-    
+
     // Form state
     const [formData, setFormData] = useState<EmailFormData>({
         to: [],
@@ -40,12 +41,12 @@ export default function NewMailPage() {
         body: "",
         attachments: []
     })
-    
+
     // Input states for email fields
     const [toInput, setToInput] = useState("")
     const [ccInput, setCcInput] = useState("")
     const [bccInput, setBccInput] = useState("")
-    
+
     // UI states
     const [showCC, setShowCC] = useState(false)
     const [showBCC, setShowBCC] = useState(false)
@@ -54,11 +55,6 @@ export default function NewMailPage() {
     const [errors, setErrors] = useState<EmailValidation>({ to: "", subject: "", body: "" })
     const [isDraftSaved, setIsDraftSaved] = useState(false)
 
-    // Email validation
-    const validateEmail = (email: string): boolean => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        return emailRegex.test(email.trim())
-    }
 
     // Add email to recipients list
     const addEmailToList = (email: string, type: 'to' | 'cc' | 'bcc') => {
@@ -104,26 +100,13 @@ export default function NewMailPage() {
         }
     }
 
-    // Convert file to base64
-    const fileToBase64 = (file: File): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader()
-            reader.readAsDataURL(file)
-            reader.onload = () => {
-                const result = reader.result as string
-                // Remove data:mime/type;base64, prefix
-                const base64 = result.split(',')[1]
-                resolve(base64)
-            }
-            reader.onerror = error => reject(error)
-        })
-    }
+
 
     // Handle file upload
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || [])
         const maxSize = 25 * 1024 * 1024 // 25MB limit
-        
+
         const validFiles = files.filter(file => {
             if (file.size > maxSize) {
                 toast.error(`${file.name} dosyası çok büyük (max 25MB)`)
@@ -136,7 +119,7 @@ export default function NewMailPage() {
             ...prev,
             attachments: [...prev.attachments, ...validFiles]
         }))
-        
+
         // Clear input
         if (e.target) e.target.value = ""
     }
@@ -149,14 +132,7 @@ export default function NewMailPage() {
         }))
     }
 
-    // Format file size
-    const formatFileSize = (bytes: number): string => {
-        if (bytes === 0) return '0 Bytes'
-        const k = 1024
-        const sizes = ['Bytes', 'KB', 'MB', 'GB']
-        const i = Math.floor(Math.log(bytes) / Math.log(k))
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-    }
+
 
     // Validate form
     const validateForm = (): boolean => {
@@ -244,15 +220,15 @@ export default function NewMailPage() {
             })
 
             if (response.ok) {
-                const successMessage = formData.attachments.length > 0 
+                const successMessage = formData.attachments.length > 0
                     ? `Email ${formData.attachments.length} ek ile birlikte başarıyla gönderildi!`
                     : "Email başarıyla gönderildi!"
                 toast.success(successMessage)
-                
+
                 // Clear draft from localStorage
                 const draftKeys = Object.keys(localStorage).filter(key => key.startsWith('email_draft_'))
                 draftKeys.forEach(key => localStorage.removeItem(key))
-                
+
                 // Navigate back to mail list
                 navigateBack()
             } else {
@@ -273,7 +249,7 @@ export default function NewMailPage() {
             const interval = setInterval(() => {
                 saveDraft()
             }, 30000)
-            
+
             return () => clearInterval(interval)
         }
     }, [formData])
@@ -286,7 +262,7 @@ export default function NewMailPage() {
         const start = textarea.selectionStart
         const end = textarea.selectionEnd
         const selectedText = formData.body.substring(start, end)
-        
+
         let formattedText = ""
         switch (tag) {
             case 'bold':
@@ -302,7 +278,7 @@ export default function NewMailPage() {
 
         const newBody = formData.body.substring(0, start) + formattedText + formData.body.substring(end)
         setFormData(prev => ({ ...prev, body: newBody }))
-        
+
         // Focus back to textarea
         setTimeout(() => {
             textarea.focus()
@@ -328,7 +304,7 @@ export default function NewMailPage() {
                         <Separator orientation="vertical" className="h-4" />
                         <h1 className="text-lg font-semibold">Yeni Email</h1>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                         <Button
                             variant="outline"
@@ -344,7 +320,7 @@ export default function NewMailPage() {
                             )}
                             {isDraftSaved ? "Kaydedildi" : "Taslak Kaydet"}
                         </Button>
-                        
+
                         <Button
                             onClick={sendEmail}
                             disabled={isLoading}
@@ -376,8 +352,8 @@ export default function NewMailPage() {
                                         {formData.to.map((email, index) => (
                                             <Badge key={index} variant="secondary" className="gap-1">
                                                 {email}
-                                                <X 
-                                                    className="w-3 h-3 cursor-pointer" 
+                                                <X
+                                                    className="w-3 h-3 cursor-pointer"
                                                     onClick={() => removeEmailFromList(email, 'to')}
                                                 />
                                             </Badge>
@@ -436,8 +412,8 @@ export default function NewMailPage() {
                                             {formData.cc.map((email, index) => (
                                                 <Badge key={index} variant="secondary" className="gap-1">
                                                     {email}
-                                                    <X 
-                                                        className="w-3 h-3 cursor-pointer" 
+                                                    <X
+                                                        className="w-3 h-3 cursor-pointer"
                                                         onClick={() => removeEmailFromList(email, 'cc')}
                                                     />
                                                 </Badge>
@@ -481,8 +457,8 @@ export default function NewMailPage() {
                                             {formData.bcc.map((email, index) => (
                                                 <Badge key={index} variant="secondary" className="gap-1">
                                                     {email}
-                                                    <X 
-                                                        className="w-3 h-3 cursor-pointer" 
+                                                    <X
+                                                        className="w-3 h-3 cursor-pointer"
                                                         onClick={() => removeEmailFromList(email, 'bcc')}
                                                     />
                                                 </Badge>
@@ -577,9 +553,8 @@ export default function NewMailPage() {
                                 onChange={(e) => setFormData(prev => ({ ...prev, body: e.target.value }))}
                                 placeholder="Email içeriğinizi buraya yazın..."
                                 rows={12}
-                                className={`w-full px-3 py-2 border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                    errors.body ? "border-red-500" : "border-gray-300"
-                                }`}
+                                className={`w-full px-3 py-2 border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.body ? "border-red-500" : "border-gray-300"
+                                    }`}
                             />
                             {errors.body && <p className="text-red-500 text-xs mt-1">{errors.body}</p>}
                         </div>
@@ -606,7 +581,7 @@ export default function NewMailPage() {
                                     </Label>
                                 </div>
                             </div>
-                            
+
                             {formData.attachments.length > 0 && (
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between text-xs text-gray-600 mb-2">
